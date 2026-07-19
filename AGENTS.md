@@ -23,8 +23,11 @@ per-OS-idiomatic choices.
 2. **No shelling out to `cmd`, `powershell`, `/bin/sh`, or any other shell.**
    Everything is implemented directly against `std::fs` / `std::io` or the
    existing dependencies (`clap`, `anyhow`, `walkdir`, `regex`, `chrono`,
-   `filetime`, `whoami`). Adding `std::process::Command` to shell out
-   defeats the purpose of the project — don't do it.
+   `filetime`, `whoami`, `rustyline`, `shell-words`). Adding
+   `std::process::Command` to shell out defeats the purpose of the project —
+   don't do it. `terminion shell` (`src/shell.rs`) is Terminion's own REPL,
+   not a wrapper around the host shell; it re-parses each line and calls the
+   same `dispatch()` as everything else.
 3. **Every command module has the same shape**: a `#[derive(ClapArgs)]
    struct Args` and `pub fn run(args: Args) -> anyhow::Result<()>`. Follow
    the pattern in an existing file (`src/commands/rm.rs` is a good short
@@ -63,7 +66,9 @@ that no one but you has reviewed. See "Using AI coding agents" in
 Follow the numbered steps in the "Adding a new command" section of
 [ARCHITECTURE.md](ARCHITECTURE.md). In short: new file in `src/commands/`,
 register it in `src/commands/mod.rs`, wire it into the `Command` enum and
-match arm in `src/main.rs`, add a row to the table in `README.md`.
+`dispatch()` in `src/main.rs`, add a row to the table in `README.md`. You do
+not need to touch `src/shell.rs` — it calls `dispatch()`, so new commands
+are automatically available inside `terminion shell` too.
 
 ## Where things live
 
@@ -72,6 +77,7 @@ match arm in `src/main.rs`, add a row to the table in `README.md`.
 | Understand overall structure         | `ARCHITECTURE.md`                        |
 | Add or change a command              | `src/commands/<name>.rs`, `src/main.rs`  |
 | Change CLI dispatch / global flags   | `src/main.rs`                            |
+| Change the interactive shell (REPL)  | `src/shell.rs`                           |
 | Change CI checks                     | `.github/workflows/ci.yml`               |
 | Change release/packaging             | `.github/workflows/release.yml`, `install.sh`, `install.ps1` |
 | Update install instructions          | `README.md`, `install.sh`, `install.ps1` |

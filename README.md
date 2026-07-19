@@ -53,6 +53,7 @@ terminion <command> [args]
 | `rm <path>... [-r -f]`                 | Remove files or directories             |
 | `cat [file]...`                        | Print file contents (stdin if omitted)  |
 | `pwd`                                   | Print working directory                 |
+| `cd [path]`                            | Change directory (see note below)       |
 | `mkdir <path>... [-p]`                 | Create directories                      |
 | `touch <file>...`                      | Create empty file / update timestamp    |
 | `echo <text>... [-n]`                  | Print text                              |
@@ -67,8 +68,32 @@ terminion <command> [args]
 | `whoami`                                | Print the current user name             |
 | `hostname`                              | Print the machine host name             |
 | `date [--utc] [-f FORMAT]`             | Print current date/time                 |
+| `shell`                                 | Start an interactive shell (see below)  |
 
 Run `terminion <command> --help` for full flag details on any command.
+
+### Interactive shell
+
+Typing `terminion` before every single command gets old fast. Run
+`terminion` with no arguments (or `terminion shell` explicitly) to drop into
+an interactive prompt where you type command names directly:
+
+```
+$ terminion
+Terminion interactive shell. Type a command name, 'help', or 'exit' to quit.
+terminion C:\Users\you\project> ls -l
+terminion C:\Users\you\project> cd src
+terminion C:\Users\you\project\src> pwd
+C:\Users\you\project\src
+terminion C:\Users\you\project\src> exit
+```
+
+The shell supports command history (arrow keys), quoted arguments
+(`mkdir "my folder"`), and `cd`, which only makes sense here: running
+`terminion cd <path>` on its own from an external shell changes directory
+for that one process and then exits immediately, so it has no lasting
+effect — inside `terminion shell` it persists for the rest of the session,
+the way `cd` normally behaves. Type `exit`, `quit`, or press Ctrl+D to leave.
 
 ## Documentation
 

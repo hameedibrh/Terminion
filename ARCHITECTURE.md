@@ -12,8 +12,10 @@ thing.
 
 ```
 src/
-  main.rs              CLI entry point: defines the subcommand enum and
-                        dispatches to commands::<name>::run()
+  main.rs              CLI entry point: defines the subcommand enum and a
+                        dispatch() function that calls commands::<name>::run()
+  shell.rs              interactive REPL (`terminion` with no args, or
+                        `terminion shell`); reuses dispatch() for every line
   commands/
     mod.rs              declares every command module
     ls.rs, cp.rs, ...    one file per command
@@ -36,8 +38,16 @@ pub fn run(args: Args) -> Result<()> {
 ```
 
 `main.rs` wires each module's `Args` struct into the top-level `Command` enum
-and calls `run()` on whichever variant was selected. That's the entire
-dispatch mechanism — there's no dynamic registry to keep in sync.
+and its `dispatch()` function calls `run()` on whichever variant was
+selected. That's the entire dispatch mechanism — there's no dynamic registry
+to keep in sync. `dispatch()` is called from two places: once in `main()` for
+normal one-shot invocations (`terminion ls`), and once per line in
+`shell.rs`'s REPL loop, which re-parses each typed line as if it were a
+fresh `terminion <line>` invocation and calls the same `dispatch()`. This is
+also why `cd` works the way it does: it calls `std::env::set_current_dir`
+in-process, so inside the shell's single long-lived process it persists
+across subsequent commands, whereas `terminion cd <path>` run standalone
+only affects that one short-lived process.
 
 ## Design principles
 
@@ -49,8 +59,9 @@ dispatch mechanism — there's no dynamic registry to keep in sync.
 - **No shell dependency.** Commands do not shell out to `cmd`, `powershell`,
   or `/bin/sh`. Everything is implemented against `std::fs`/`std::io` or a
   small, explicit set of crates (`walkdir`, `regex`, `chrono`, `filetime`,
-  `whoami`). This is what makes the binary portable and the behavior
-  predictable.
+  `whoami`, `rustyline`, `shell-words`). This is what makes the binary
+  portable and the behavior predictable. `terminion shell` is Terminion's
+  own REPL, not a wrapper around the host OS's shell.
 - **Errors via `anyhow`.** Commands return `anyhow::Result<()>`. `main.rs`
   prints `Err` as `terminion: <message>` and exits with status 1. Use
   `.with_context(...)` when the raw error (e.g. an `io::Error`) wouldn't
@@ -66,7 +77,9 @@ dispatch mechanism — there's no dynamic registry to keep in sync.
 2. Add `pub mod <name>;` to `src/commands/mod.rs` (keep the list
    alphabetical).
 3. Add a variant to the `Command` enum in `src/main.rs` and a matching arm in
-   the `match cli.command` dispatch block.
+   the `dispatch()` function. No change to `shell.rs` is needed — it calls
+   `dispatch()` too, so every command is automatically available inside
+   `terminion shell` as soon as it's wired into `main.rs`.
 4. Add a row to the command table in `README.md`.
 5. Run `cargo fmt && cargo clippy -- -D warnings && cargo build` and smoke
    test the new command manually (see [CONTRIBUTING.md](CONTRIBUTING.md)).

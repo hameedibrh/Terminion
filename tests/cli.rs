@@ -1,7 +1,8 @@
 //! Black-box integration tests: run the built binary and check its output.
 
+use std::io::Write;
 use std::path::Path;
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 
 fn bin() -> Command {
     Command::new(env!("CARGO_BIN_EXE_terminion"))
@@ -17,6 +18,26 @@ fn run_in(dir: &Path, args: &[&str]) -> Output {
 
 fn stdout(out: &Output) -> String {
     String::from_utf8_lossy(&out.stdout).into_owned()
+}
+
+/// Feed `script` (one command per line) to `terminion shell` over stdin and
+/// return what it printed to stdout.
+fn run_shell_in(dir: &Path, script: &str) -> Output {
+    let mut child = bin()
+        .arg("shell")
+        .current_dir(dir)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("failed to spawn terminion shell");
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(script.as_bytes())
+        .unwrap();
+    child.wait_with_output().expect("shell did not exit")
 }
 
 #[test]
@@ -235,4 +256,48 @@ fn date_prints_a_formatted_timestamp() {
     let printed = stdout(&out);
     // default format is "%Y-%m-%d %H:%M:%S"
     assert_eq!(printed.trim().len(), "2026-07-19 10:30:05".len());
+}
+
+#[test]
+fn cd_changes_directory_for_the_current_process() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir(dir.path().join("sub")).unwrap();
+
+    assert!(run_in(dir.path(), &["cd", "sub"]).status.success());
+    assert!(!run_in(dir.path(), &["cd", "missing"]).status.success());
+}
+
+#[test]
+fn shell_runs_commands_from_stdin_and_exits_cleanly() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = run_shell_in(dir.path(), "echo hello-from-shell\nexit\n");
+    assert!(out.status.success());
+    assert!(stdout(&out).contains("hello-from-shell"));
+}
+
+#[test]
+fn shell_cd_persists_across_commands() {
+    let dir = tempfile::tempdir().unwrap();
+    std::fs::create_dir(dir.path().join("sub")).unwrap();
+    std::fs::write(dir.path().join("sub/marker.txt"), b"x").unwrap();
+
+    let out = run_shell_in(dir.path(), "cd sub\nls\nexit\n");
+    assert!(out.status.success());
+    assert!(stdout(&out).contains("marker.txt"));
+}
+
+#[test]
+fn shell_reports_unknown_command_but_keeps_running() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = run_shell_in(dir.path(), "not-a-real-command\necho still-alive\nexit\n");
+    assert!(out.status.success());
+    assert!(stdout(&out).contains("still-alive"));
+}
+
+#[test]
+fn shell_exits_cleanly_on_stdin_eof_without_exit_command() {
+    let dir = tempfile::tempdir().unwrap();
+    let out = run_shell_in(dir.path(), "echo no-explicit-exit\n");
+    assert!(out.status.success());
+    assert!(stdout(&out).contains("no-explicit-exit"));
 }

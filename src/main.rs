@@ -1,4 +1,5 @@
 mod commands;
+mod shell;
 
 use clap::{Parser, Subcommand};
 
@@ -10,7 +11,7 @@ use clap::{Parser, Subcommand};
 )]
 struct Cli {
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 #[derive(Subcommand)]
@@ -27,6 +28,8 @@ enum Command {
     Cat(commands::cat::Args),
     /// Print working directory
     Pwd(commands::pwd::Args),
+    /// Change the current directory (persists only inside `terminion shell`)
+    Cd(commands::cd::Args),
     /// Create directories
     Mkdir(commands::mkdir::Args),
     /// Create an empty file / update its timestamp
@@ -55,18 +58,19 @@ enum Command {
     Hostname(commands::hostname::Args),
     /// Print the current date and time
     Date(commands::date::Args),
+    /// Start an interactive shell so you don't have to type `terminion` before every command
+    Shell,
 }
 
-fn main() {
-    let cli = Cli::parse();
-
-    let result = match cli.command {
+fn dispatch(command: Command) -> anyhow::Result<()> {
+    match command {
         Command::Ls(args) => commands::ls::run(args),
         Command::Cp(args) => commands::cp::run(args),
         Command::Mv(args) => commands::mv::run(args),
         Command::Rm(args) => commands::rm::run(args),
         Command::Cat(args) => commands::cat::run(args),
         Command::Pwd(args) => commands::pwd::run(args),
+        Command::Cd(args) => commands::cd::run(args),
         Command::Mkdir(args) => commands::mkdir::run(args),
         Command::Touch(args) => commands::touch::run(args),
         Command::Echo(args) => commands::echo::run(args),
@@ -81,6 +85,18 @@ fn main() {
         Command::Whoami(args) => commands::whoami::run(args),
         Command::Hostname(args) => commands::hostname::run(args),
         Command::Date(args) => commands::date::run(args),
+        Command::Shell => shell::run(),
+    }
+}
+
+fn main() {
+    let cli = Cli::parse();
+
+    // Running `terminion` with no subcommand drops into the same
+    // interactive shell as `terminion shell`.
+    let result = match cli.command {
+        Some(command) => dispatch(command),
+        None => shell::run(),
     };
 
     if let Err(e) = result {

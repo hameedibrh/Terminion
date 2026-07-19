@@ -5,6 +5,16 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Interactive shell mode (`terminion shell`, or bare `terminion` with no
+  subcommand): a REPL with command history and quoted-argument parsing so
+  you don't have to type `terminion` before every command.
+- `cd` command, primarily useful inside the interactive shell where it
+  persists across commands for the rest of the session.
+- Integration test suite (`tests/cli.rs`) covering all commands and the
+  shell.
+
 ## [0.1.0]
 
 ### Added
