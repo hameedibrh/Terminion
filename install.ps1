@@ -17,7 +17,9 @@ if (-not $Releases -or $Releases.Count -eq 0) {
 $Tag = $Releases[0].tag_name
 
 $Url = "https://github.com/$Repo/releases/download/$Tag/terminion-$Target.zip"
-$TmpZip = New-TemporaryFile
+# Expand-Archive requires a .zip extension on the path itself, but
+# New-TemporaryFile creates a .tmp file, so build the temp path by hand.
+$TmpZip = Join-Path ([System.IO.Path]::GetTempPath()) "terminion-$([guid]::NewGuid()).zip"
 
 Write-Host "Installing terminion $Tag"
 Write-Host "Downloading $Url"
