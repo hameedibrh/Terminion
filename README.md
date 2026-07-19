@@ -23,16 +23,27 @@ more valuable than relying on each platform's built-in tooling.
 
 ## Install
 
+Both installers default to a **per-user** install (no admin/sudo required):
+`~/.local/bin` on Linux/macOS, `%LOCALAPPDATA%\terminion` on Windows. Pass
+`--global` / `-Global` for a system-wide install instead (`/usr/local/bin`,
+or `%ProgramFiles%\Terminion` — needs sudo / an elevated PowerShell).
+
 **Linux / macOS**
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.sh | bash
+
+# system-wide, for all users:
+curl -fsSL https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.sh | sudo bash -s -- --global
 ```
 
 **Windows (PowerShell)**
 
 ```powershell
 irm https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.ps1 | iex
+
+# system-wide, for all users (run from an elevated/Administrator PowerShell):
+&([scriptblock]::Create((irm https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.ps1))) -Global
 ```
 
 **From source**

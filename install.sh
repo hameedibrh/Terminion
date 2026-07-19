@@ -1,10 +1,31 @@
 #!/usr/bin/env bash
-# Installs the latest terminion release for Linux/macOS.
-# Usage: curl -fsSL https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.sh | bash
+# Installs terminion for Linux/macOS.
+# Per-user (default, no sudo required):
+#   curl -fsSL https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.sh | bash
+# System-wide, for all users (requires sudo):
+#   curl -fsSL https://raw.githubusercontent.com/hameedibrh/Terminion/main/install.sh | sudo bash -s -- --global
 set -euo pipefail
 
 REPO="hameedibrh/Terminion"
-INSTALL_DIR="${INSTALL_DIR:-$HOME/.local/bin}"
+
+global=0
+for arg in "$@"; do
+  case "$arg" in
+    --global) global=1 ;;
+  esac
+done
+
+if [ "$global" = "1" ]; then
+  if [ "$(id -u)" -ne 0 ]; then
+    echo "Global install requires root. Re-run as:" >&2
+    echo "  curl -fsSL https://raw.githubusercontent.com/${REPO}/main/install.sh | sudo bash -s -- --global" >&2
+    exit 1
+  fi
+  default_dir="/usr/local/bin"
+else
+  default_dir="$HOME/.local/bin"
+fi
+INSTALL_DIR="${INSTALL_DIR:-$default_dir}"
 
 os="$(uname -s)"
 arch="$(uname -m)"
@@ -38,7 +59,7 @@ url="https://github.com/${REPO}/releases/download/${tag}/terminion-${target}.tar
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-echo "Installing terminion ${tag}"
+echo "Installing terminion ${tag}$([ "$global" = "1" ] && echo ' (system-wide)')"
 echo "Downloading $url"
 curl -fsSL "$url" -o "$tmp_dir/terminion.tar.gz"
 tar xzf "$tmp_dir/terminion.tar.gz" -C "$tmp_dir"
