@@ -11,6 +11,9 @@ follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   system-wide install (`/usr/local/bin`, or `%ProgramFiles%\Terminion` on
   Windows), requiring sudo / an elevated PowerShell. Per-user remains the
   default.
+- Permission-denied errors now print an OS-appropriate hint (`sudo` on
+  Linux/macOS, "run from an elevated shell" on Windows) instead of just the
+  raw OS error.
 
 ### Fixed
 

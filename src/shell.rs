@@ -1,4 +1,4 @@
-use crate::{Cli, dispatch};
+use crate::{Cli, dispatch, print_error};
 use anyhow::Result;
 use clap::Parser;
 use rustyline::DefaultEditor;
@@ -64,7 +64,7 @@ pub fn run() -> Result<()> {
                 if let Some(command) = cli.command
                     && let Err(e) = dispatch(command)
                 {
-                    eprintln!("terminion: {e}");
+                    print_error(&e);
                 }
             }
             Err(e) => {

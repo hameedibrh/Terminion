@@ -62,10 +62,19 @@ only affects that one short-lived process.
   `whoami`, `rustyline`, `shell-words`). This is what makes the binary
   portable and the behavior predictable. `terminion shell` is Terminion's
   own REPL, not a wrapper around the host OS's shell.
-- **Errors via `anyhow`.** Commands return `anyhow::Result<()>`. `main.rs`
-  prints `Err` as `terminion: <message>` and exits with status 1. Use
-  `.with_context(...)` when the raw error (e.g. an `io::Error`) wouldn't
-  tell the user which path or operation failed.
+- **Errors via `anyhow`.** Commands return `anyhow::Result<()>`. Both
+  `main.rs` (one-shot invocations) and `shell.rs` (each REPL line) print
+  errors through `main.rs`'s `print_error()`, which prints
+  `terminion: <message>` and — if the error chain contains an
+  `io::Error` with kind `PermissionDenied` — appends an OS-appropriate
+  escalation hint (`sudo` on Linux/macOS, "run from an elevated shell" on
+  Windows). This is automatic for any command; you don't need to do
+  anything in a new command to get it, as long as the underlying
+  `io::Error` reaches the top uncovered (an `.with_context(...)` wrapper
+  preserves the chain and still triggers it — just don't swallow the error
+  into a plain `String` or a new error type that drops the source).
+  Use `.with_context(...)` when the raw error (e.g. an `io::Error`)
+  wouldn't tell the user which path or operation failed.
 - **No global config, no interactive prompts.** Every command is
   non-interactive and driven entirely by CLI arguments, so it's safe to use
   in scripts on any platform.

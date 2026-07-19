@@ -89,6 +89,27 @@ fn dispatch(command: Command) -> anyhow::Result<()> {
     }
 }
 
+/// Print `terminion: <error>`, plus an OS-appropriate escalation hint if the
+/// underlying cause was a permission error (e.g. writing to a system path
+/// without `sudo` on Linux/macOS, or without an elevated shell on Windows).
+fn print_error(e: &anyhow::Error) {
+    eprintln!("terminion: {e}");
+    if is_permission_denied(e) {
+        let hint = if cfg!(windows) {
+            "hint: try running from an elevated PowerShell or Command Prompt (Run as Administrator)."
+        } else {
+            "hint: try running with sudo."
+        };
+        eprintln!("{hint}");
+    }
+}
+
+fn is_permission_denied(e: &anyhow::Error) -> bool {
+    e.chain()
+        .filter_map(|cause| cause.downcast_ref::<std::io::Error>())
+        .any(|io_err| io_err.kind() == std::io::ErrorKind::PermissionDenied)
+}
+
 fn main() {
     let cli = Cli::parse();
 
@@ -100,7 +121,26 @@ fn main() {
     };
 
     if let Err(e) = result {
-        eprintln!("terminion: {e}");
+        print_error(&e);
         std::process::exit(1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_permission_denied;
+
+    #[test]
+    fn detects_permission_denied_in_error_chain() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::PermissionDenied, "denied");
+        let err = anyhow::Error::new(io_err).context("failed to remove /etc/foo");
+        assert!(is_permission_denied(&err));
+    }
+
+    #[test]
+    fn ignores_unrelated_errors() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing");
+        let err = anyhow::Error::new(io_err).context("failed to read /etc/foo");
+        assert!(!is_permission_denied(&err));
     }
 }
