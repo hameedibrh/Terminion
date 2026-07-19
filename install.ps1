@@ -6,9 +6,20 @@ $Repo = "hameedibrh/Terminion"
 $InstallDir = "$env:LOCALAPPDATA\terminion"
 $Target = "x86_64-pc-windows-msvc"
 
-$Url = "https://github.com/$Repo/releases/latest/download/terminion-$Target.zip"
+# GitHub's "/releases/latest" shortcut only ever resolves to the newest
+# *stable* release, so it 404s while every published release is a
+# pre-release (e.g. an alpha). Resolve the newest release of any kind
+# (including pre-releases) via the API instead.
+$Releases = Invoke-RestMethod -Uri "https://api.github.com/repos/$Repo/releases"
+if (-not $Releases -or $Releases.Count -eq 0) {
+    throw "No releases found for $Repo yet."
+}
+$Tag = $Releases[0].tag_name
+
+$Url = "https://github.com/$Repo/releases/download/$Tag/terminion-$Target.zip"
 $TmpZip = New-TemporaryFile
 
+Write-Host "Installing terminion $Tag"
 Write-Host "Downloading $Url"
 Invoke-WebRequest -Uri $Url -OutFile $TmpZip
 

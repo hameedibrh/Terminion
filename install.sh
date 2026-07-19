@@ -21,10 +21,24 @@ case "$os" in
   *) echo "Unsupported OS: $os" >&2; exit 1 ;;
 esac
 
-url="https://github.com/${REPO}/releases/latest/download/terminion-${target}.tar.gz"
+# GitHub's "/releases/latest" shortcut only ever resolves to the newest
+# *stable* release, so it 404s while every published release is a
+# pre-release (e.g. an alpha). Resolve the newest release of any kind
+# (including pre-releases) via the API instead.
+tag="$(curl -fsSL "https://api.github.com/repos/${REPO}/releases" \
+  | grep -m1 '"tag_name"' \
+  | sed -E 's/.*"tag_name": *"([^"]+)".*/\1/')"
+
+if [ -z "$tag" ]; then
+  echo "No releases found for ${REPO} yet." >&2
+  exit 1
+fi
+
+url="https://github.com/${REPO}/releases/download/${tag}/terminion-${target}.tar.gz"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
+echo "Installing terminion ${tag}"
 echo "Downloading $url"
 curl -fsSL "$url" -o "$tmp_dir/terminion.tar.gz"
 tar xzf "$tmp_dir/terminion.tar.gz" -C "$tmp_dir"

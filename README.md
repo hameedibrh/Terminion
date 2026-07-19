@@ -1,6 +1,7 @@
 # Terminion
 
 [![CI](https://github.com/hameedibrh/Terminion/actions/workflows/ci.yml/badge.svg)](https://github.com/hameedibrh/Terminion/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/hameedibrh/Terminion?include_prereleases)](https://github.com/hameedibrh/Terminion/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 One command syntax for Windows, Linux, and macOS shells.
@@ -11,13 +12,14 @@ same flags on cmd.exe, PowerShell, bash, and zsh — no more remembering
 
 ## Project status
 
-Terminion is an open source hobby project, maintained outside of a full-time
-job. It is **not intended for production environments**. For anything
-running in production, use your platform's native, well-established
-commands — that remains the safer and recommended choice. Terminion is best
-suited to personal workflows, scripts, and environments where a single
-consistent syntax across operating systems is more valuable than relying on
-each platform's built-in tooling.
+Terminion is in **alpha**: commands and flags may still change between
+releases without notice. It's also an open source hobby project, maintained
+outside of a full-time job, and it is **not intended for production
+environments**. For anything running in production, use your platform's
+native, well-established commands — that remains the safer and recommended
+choice. Terminion is best suited to personal workflows, scripts, and
+environments where a single consistent syntax across operating systems is
+more valuable than relying on each platform's built-in tooling.
 
 ## Install
 
